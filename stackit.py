@@ -16,7 +16,8 @@ def getMovieFiles(argv):
     for dir in dirs:    
       for ext in exts:
         for name in os.listdir(os.path.join(root, dir)):
-          if name.find(ext) != -1:
+          uppername = name.upper()
+          if uppername.find(ext.upper()) != -1:
             dirfiles.append(os.path.join(root, dir, name))
             filelist[os.path.join(root, dir)] = dirfiles
       dirfiles=[]
@@ -25,27 +26,24 @@ def getMovieFiles(argv):
   return dict(movielist)
 
 def process(movies):
-  for movie in movies.keys():
-    moviename = movie + '.txt'	  
+  for moviepath in movies.keys():
+    moviename = moviepath + '.txt'	  
     f = open(moviename, 'w') 
-    for moviepart in movies[movie]:
-      f.write('file ' + moviepart + '\n')	
+    for moviepart in movies[moviepath]:
+      f.write('file ' + "'" + moviepart + "'" + '\n')	
     f.close
-    
-    ext = os.path.splitext(moviepart)[1].lower()
-    moviename_output = movie + "/" + movie + ext
-    #movienamepath = os.path.join(root, moviename)
-    print(moviename)
-    #moviename_outputpath = os.path.join(root, moviename_output)
-    print(moviename_output)
-    command = "ffmpeg -f concat -i {0} -c copy {1}".format(unicode(moviename), unicode(moviename_output))
+
+    path, movie = os.path.split(moviepath)
+    extension = os.path.splitext(moviepart)[1].lower()
+    moviename_output = moviepath + "\\" + movie + extension
+    command = "ffmpeg -f concat -i {0} -c copy {1} -loglevel verbose".format(unicode(moviename), unicode(moviename_output))
     print(command)
-    p = subprocess.call(command)
+    p = subprocess.call(command, shell=True)
 
 def usage(EXIT_CODE):
 
   print("")
-  print("Usage: flatten.py <movies_root_directory>")
+  print("Usage: stackit.py <movies_root_directory>")
   sys.exit(EXIT_CODE)
 
 def main(argv):
@@ -53,6 +51,7 @@ def main(argv):
   if (len(argv) == 0 or len(argv) >= 2): usage(1)
   
   movielist = getMovieFiles(argv)
+  #print(movielist)
   if not movielist:
     print("No movies to process")
   else:
