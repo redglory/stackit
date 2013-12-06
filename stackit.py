@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import os, sys
 import subprocess
+import time
+from subprocess import Popen, PIPE
 
 def getMovieFiles(argv):
 
@@ -35,9 +37,17 @@ def process(movies):
     extension = os.path.splitext(moviepart)[1].lower()
     movie_output = moviepart.rsplit('.',2)[0] + extension
     
-    command = "ffmpeg -f concat -i {0} -c copy {1} -loglevel verbose".format(unicode(moviename), unicode(movie_output))
-    print(command)
-    subprocess.call(command, shell=True)
+    try:
+      print "Please wait, stacking movie: %s..."% moviepath
+      ffmpeg_command = ["ffmpeg", "-f", "concat", "-i", moviename, "-c", "copy", movie_output]
+      #command = "ffmpeg -f concat -i {0} -c copy {1} -loglevel verbose".format(moviename, movie_output)
+      print(ffmpeg_command)
+      p = subprocess.Popen(ffmpeg_command, stdout=PIPE, stderr=PIPE)
+      stdout, stderr = p.communicate()	  
+      #p = subprocess.Popen(ffmpeg_command, shell=True)
+      #output, errors = p.communicate()
+    except Exception as e:
+      print(e)
 
 def usage(EXIT_CODE):
 
