@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-import os
-import sys
+import os, sys
 import subprocess
 
 def getMovieFiles(argv):
@@ -12,7 +11,7 @@ def getMovieFiles(argv):
   for x in range(1,10):
     exts.append(".CD{0}.avi".format(x))
 
-  for root, dirs, files in os.walk(argv[0]):
+  for root, dirs, files in os.walk(argv[0]):			
     for dir in dirs:    
       for ext in exts:
         for name in os.listdir(os.path.join(root, dir)):
@@ -32,18 +31,19 @@ def process(movies):
     for moviepart in movies[moviepath]:
       f.write('file ' + "'" + moviepart + "'" + '\n')	
     f.close
-
-    path, movie = os.path.split(moviepath)
+    
     extension = os.path.splitext(moviepart)[1].lower()
-    moviename_output = moviepath + "\\" + movie + extension
-    command = "ffmpeg -f concat -i {0} -c copy {1} -loglevel verbose".format(unicode(moviename), unicode(moviename_output))
+    movie_output = moviepart.rsplit('.',2)[0] + extension
+    
+    command = "ffmpeg -f concat -i {0} -c copy {1} -loglevel verbose".format(unicode(moviename), unicode(movie_output))
     print(command)
-    p = subprocess.call(command, shell=True)
+    subprocess.call(command, shell=True)
 
 def usage(EXIT_CODE):
 
-  print("")
-  print("Usage: stackit.py <movies_root_directory>")
+  print("===============================================")
+  print("== Usage: stackit.py <movies_root_directory> ==")
+  print("===============================================")
   sys.exit(EXIT_CODE)
 
 def main(argv):
@@ -53,7 +53,7 @@ def main(argv):
   movielist = getMovieFiles(argv)
   #print(movielist)
   if not movielist:
-    print("No movies to process")
+    print("No movies on %s to process" % argv[0])
   else:
     process(movielist)
 
