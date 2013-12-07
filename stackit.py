@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 import os, sys
 import subprocess
-import time
-from subprocess import Popen, PIPE
 
 def getMovieFiles(argv):
 
@@ -28,7 +26,7 @@ def getMovieFiles(argv):
 
 def process(movies):
   for moviepath in movies.keys():
-    moviename = moviepath + '.txt'	  
+    moviename = moviepath + '.txt'
     f = open(moviename, 'w') 
     for moviepart in movies[moviepath]:
       f.write('file ' + "'" + moviepart + "'" + '\n')	
@@ -39,29 +37,20 @@ def process(movies):
     
     try:
       print "Please wait, stacking movie: %s..."% moviepath
-      ffmpeg_command = ["ffmpeg", "-f", "concat", "-i", moviename, "-c", "copy", movie_output]
-      #command = "ffmpeg -f concat -i {0} -c copy {1} -loglevel verbose".format(moviename, movie_output)
-      print(ffmpeg_command)
-      p = subprocess.Popen(ffmpeg_command, stdout=PIPE, stderr=PIPE)
-      stdout, stderr = p.communicate()	  
-      #p = subprocess.Popen(ffmpeg_command, shell=True)
-      #output, errors = p.communicate()
+      ffmpeg_command = ["ffmpeg", "-f", "concat", "-i", moviename, "-c", "copy", "-y", movie_output]
+      p = subprocess.Popen(ffmpeg_command)
     except Exception as e:
       print(e)
-
-def usage(EXIT_CODE):
-
-  print("===============================================")
-  print("== Usage: stackit.py <movies_root_directory> ==")
-  print("===============================================")
-  sys.exit(EXIT_CODE)
-
+	  
 def main(argv):
 
-  if (len(argv) == 0 or len(argv) >= 2): usage(1)
+  if (len(argv) == 0 or len(argv) >= 2):
+    print("===============================================")
+    print("== How to use stackit: stackit.py <movies_root_directory> ==")
+    print("===============================================")
+    sys.exit(1)
   
   movielist = getMovieFiles(argv)
-  #print(movielist)
   if not movielist:
     print("No movies on %s to process" % argv[0])
   else:
