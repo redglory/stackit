@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import os, sys
-import subprocess
+from subprocess import *
 
 def getMovieFiles(argv):
 
@@ -25,6 +25,7 @@ def getMovieFiles(argv):
   return dict(movielist)
 
 def process(movies):
+
   for moviepath in movies.keys():
     moviename = moviepath + '.txt'
     f = open(moviename, 'w') 
@@ -38,16 +39,16 @@ def process(movies):
     try:
       print "Please wait, stacking movie: %s..."% moviepath
       ffmpeg_command = ["ffmpeg", "-f", "concat", "-i", moviename, "-c", "copy", "-y", movie_output]
-      p = subprocess.Popen(ffmpeg_command)
+      p = Popen(ffmpeg_command)
     except Exception as e:
       print(e)
 	  
 def main(argv):
 
   if (len(argv) == 0 or len(argv) >= 2):
-    print("===============================================")
+    print("============================================================")
     print("== How to use stackit: stackit.py <movies_root_directory> ==")
-    print("===============================================")
+    print("============================================================")
     sys.exit(1)
   
   movielist = getMovieFiles(argv)
@@ -57,6 +58,7 @@ def main(argv):
     process(movielist)
 
 if __name__ == "__main__":
+
   try:
     main(sys.argv[1:])
   except (KeyboardInterrupt, SystemExit) as e:
