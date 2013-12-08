@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 import os, sys
 from subprocess import *
+import datetime
+
+global movie_count
 
 def getMovieFiles(argv):
 
@@ -26,6 +29,9 @@ def getMovieFiles(argv):
 
 def process(movies):
 
+  movie_count = 0
+  startTime = datetime.datetime.now()
+  
   for moviepath in movies.keys():
     moviename = moviepath + '.txt'
     f = open(moviename, 'w') 
@@ -35,14 +41,19 @@ def process(movies):
     
     extension = os.path.splitext(moviepart)[1].lower()
     movie_output = moviepart.rsplit('.',2)[0] + extension
-    
+    movie_count += 1
+	
     try:
-      print "Please wait, stacking movie: %s..."% moviepath
+      print("Please wait, stacking movie: %s..."% moviepath)
       ffmpeg_command = ["ffmpeg", "-f", "concat", "-i", moviename, "-c", "copy", "-y", movie_output]
-      p = Popen(ffmpeg_command)
+      ffmpeg  = Popen(ffmpeg_command)
+      print("Stacking process ran successfully!...")
     except Exception as e:
       print(e)
-	  
+  endTime = datetime.datetime.now()
+  stack_time = str((endTime - startTime))
+  print("Stacked %i movies which took %s"% (movie_count, stack_time))
+  
 def main(argv):
 
   if (len(argv) == 0 or len(argv) >= 2):
