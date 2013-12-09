@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 import os, sys
-from subprocess import *
+import subprocess
 import datetime
+import logging
 
 global movie_count
+
+logging.basicConfig(filename="stackit.log")
+logger = logging.getLogger()
 
 def getMovieFiles(argv):
 
@@ -31,13 +35,15 @@ def process(movies):
 
   movie_count = 0
   startTime = datetime.datetime.now()
+  logger.info("Movie(s) stacking process started at: %s"% startTime)
   
   for moviepath in movies.keys():
     moviename = moviepath + '.txt'
     f = open(moviename, 'w') 
     for moviepart in movies[moviepath]:
-      f.write('file ' + "'" + moviepart + "'" + '\n')	
-    f.close
+      f.write('file ' + "'" + moviepart + "'" + '\n')
+    f.flush()	  
+    f.close()
     
     extension = os.path.splitext(moviepart)[1].lower()
     movie_output = moviepart.rsplit('.',2)[0] + extension
@@ -45,14 +51,21 @@ def process(movies):
 	
     try:
       print("Please wait, stacking movie: %s..."% moviepath)
+      logger.info("Stacking movie: %s"% moviepath)
       ffmpeg_command = ["ffmpeg", "-f", "concat", "-i", moviename, "-c", "copy", "-y", movie_output]
-      ffmpeg  = Popen(ffmpeg_command)
-      print("Stacking process ran successfully!...")
+      logger.info("Running FFMPEG with arguments: %s"% ffmpeg_command)
+      response = subprocess.check_output(ffmpeg_command, stderr=subprocess.STDOUT).decode("utf-8")
+      print(response)
+      logger.debug(response)
+      print("Stacking movie: %s finished successfully!"% moviepath)
     except Exception as e:
       print(e)
+      logger.error('FFMPEG ERROR: ' + str(e))
+
   endTime = datetime.datetime.now()
   stack_time = str((endTime - startTime))
-  print("Stacked %i movies which took %s"% (movie_count, stack_time))
+  print("Stacking %i movie(s) took: %s"% (movie_count, stack_time))
+  logger.info("[%i] Movie(s) were stacked. This process ended at %s and took %s"% (movie_count, endTime, stack_time))
   
 def main(argv):
 
