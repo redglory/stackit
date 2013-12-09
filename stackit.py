@@ -55,17 +55,16 @@ def process(movies):
       ffmpeg_command = ["ffmpeg", "-f", "concat", "-i", moviename, "-c", "copy", "-y", movie_output]
       logger.info("Running FFMPEG with arguments: %s"% ffmpeg_command)
       response = subprocess.check_output(ffmpeg_command, stderr=subprocess.STDOUT).decode("utf-8")
-      print(response)
       logger.debug(response)
       print("Stacking movie: %s finished successfully!"% moviepath)
     except Exception as e:
-      print(e)
-      logger.error('FFMPEG ERROR: ' + str(e))
+      print(e + '\n')
+      logger.error('FFMPEG ERROR OUTPUT: \n' + str(e))
 
   endTime = datetime.datetime.now()
   stack_time = str((endTime - startTime))
-  print("Stacking %i movie(s) took: %s"% (movie_count, stack_time))
-  logger.info("[%i] Movie(s) were stacked. This process ended at %s and took %s"% (movie_count, endTime, stack_time))
+  print("[%i] Movie(s) were stacked successfully. This process ended at %s and took %s"% (movie_count, endTime, stack_time))
+  logger.info("[%i] Movie(s) were stacked successfully. This process ended at %s and took %s"% (movie_count, endTime, stack_time))
   
 def main(argv):
 
