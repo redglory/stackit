@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 import os, sys
 import subprocess
-import datetime
+import time
 import logging
+import shlex
 
 global movie_count
-
-logging.basicConfig(filename="stackit.log")
-logger = logging.getLogger()
 
 def getMovieFiles(argv):
 
@@ -33,9 +31,10 @@ def getMovieFiles(argv):
 
 def process(movies):
 
+  logging.basicConfig(filename="stackit.log", level=logging.DEBUG, filemode = 'w')
+
   movie_count = 0
-  startTime = datetime.datetime.now()
-  logger.info("Movie(s) stacking process started at: %s"% startTime)
+  startTime = time.time()
   
   for moviepath in movies.keys():
     moviename = moviepath + '.txt'
@@ -51,20 +50,30 @@ def process(movies):
 	
     try:
       print("Please wait, stacking movie: %s..."% moviepath)
-      logger.info("Stacking movie: %s"% moviepath)
+      logging.info("Stacking movie: %s"% moviepath)
       ffmpeg_command = ["ffmpeg", "-f", "concat", "-i", moviename, "-c", "copy", "-y", movie_output]
-      logger.info("Running FFMPEG with arguments: %s"% ffmpeg_command)
-      response = subprocess.check_output(ffmpeg_command, stderr=subprocess.STDOUT).decode("utf-8")
-      logger.debug(response)
-      print("Stacking movie: %s finished successfully!"% moviepath)
-    except Exception as e:
-      print(e + '\n')
-      logger.error('FFMPEG ERROR OUTPUT: \n' + str(e))
+      logging.info("Running FFMPEG with arguments: %s"% ffmpeg_command)
+      #response = subprocess.check_output(ffmpeg_command, stderr=subprocess.STDOUT).decode("utf-8")
+      ffmpeg = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+      output, errors = ffmpeg.communicate()
+      if ffmpeg.returncode == 0:	  
+        print("Stacking movie: %s finished successfully!"% moviepath)
+        logging.info(output + '\n')
+        logging.info("Stacking movie: %s finished successfully!\n"% moviepath)
+    except OSError:
+        logging.debug('OS Error')
+    except subprocess.CalledProcessError as e:
+      print("[FFMPEG ERROR] Stacking movie: %s was unsuccessfully! \n"% moviepath)
+      logging.debug("[FFMPEG ERROR] Stacking movie: %s was unsuccessfully!"% moviepath + str(e))
 
-  endTime = datetime.datetime.now()
-  stack_time = str((endTime - startTime))
-  print("[%i] Movie(s) were stacked successfully. This process ended at %s and took %s"% (movie_count, endTime, stack_time))
-  logger.info("[%i] Movie(s) were stacked successfully. This process ended at %s and took %s"% (movie_count, endTime, stack_time))
+  endTime = time.time()
+  proc_time = str((round(endTime - startTime) / 60))
+  print("#############################################")
+  print("## [%i] Movie(s) were stacked successfully! ##"% movie_count)
+  print("#############################################")
+  logging.info("##################################################################")
+  logging.info("## [%i] Movie(s) were stacked successfully. Runtime: %s seconds ##"% (movie_count, proc_time))
+  logging.info("##################################################################")
   
 def main(argv):
 
