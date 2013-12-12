@@ -4,8 +4,27 @@ import subprocess
 import time
 import logging
 import shlex
+import errno
 
 global movie_count
+
+def mkdir_p(path):
+    try:
+      os.makedirs(path)
+    except OSError as e:
+      if e.errno == errno.EEXIST and os.path.isdir(path):
+        pass
+      else: 
+	    raise 
+
+if sys.platform == "win32":
+  mkdir_p(os.path.join(os.getcwd(), "logs"))
+  Logger = logging.getLogger(os.path.join(os.getcwd(), "logs\stackit.log"))
+  #logging.basicConfig(filename="logs\stackit.log", level=logging.DEBUG, filemode = 'w')
+else:
+  mkdir_p(os.path.join(os.getcwd(), "logs"))
+  Logger = logging.getLogger(os.path.join(os.getcwd(), "logs/stackit.log"))
+  #logging.basicConfig(filename="logs/stackit.log", level=Logger.DEBUG, filemode = 'w')
 
 def getMovieFiles(argv):
 
@@ -28,17 +47,31 @@ def getMovieFiles(argv):
 
   movielist = sorted(filelist.items(), key = lambda t: t[0])
   return dict(movielist)
+ 
+
+def remove_file(filepath):
+   if sys.platform == "win32":
+     remove_command = ["del", os.path.realpath(filepath)]
+   else:
+     remove_command = ["rm", os.path.realpath(filepath)]
+   try:
+     print remove_command
+     Logger.info("Remove command: %s"% remove_command)
+     response = subprocess.check_call(remove_command, stderr=subprocess.STDOUT).decode("utf-8")
+     if response == 0:
+       Logger.info("Permanently removed file %s!"% filepath)
+   except Exception as e:
+     Logger.error("[ERROR]There was a problem removing file: %s!"% filepath)
+     raise
 
 def process(movies):
-
-  logging.basicConfig(filename="stackit.log", level=logging.DEBUG, filemode = 'w')
 
   movie_count = 0
   startTime = time.time()
   
   for moviepath in movies.keys():
-    moviename = moviepath + '.txt'
-    f = open(moviename, 'w') 
+    movietxt = moviepath + '.txt'
+    f = open(movietxt, 'w') 
     for moviepart in movies[moviepath]:
       f.write('file ' + "'" + moviepart + "'" + '\n')
     f.flush()	  
@@ -50,50 +83,28 @@ def process(movies):
 	
     try:
       print("Please wait, stacking movie: %s..."% moviepath)
-      logging.info("Stacking movie: %s"% moviepath)
-      ffmpeg_command = ["ffmpeg", "-f", "concat", "-i", moviename, "-c", "copy", "-y", movie_output]
-      logging.info("Running FFMPEG with arguments: %s"% ffmpeg_command)
+      Logger.info("Stacking movie: %s"% moviepath)
+      ffmpeg_command = ["ffmpeg", "-f", "concat", "-i", movietxt, "-c", "copy", "-y", movie_output]
+      Logger.info("Running FFMPEG with arguments: %s"% ffmpeg_command)
       #response = subprocess.check_output(ffmpeg_command, stderr=subprocess.STDOUT).decode("utf-8")
       ffmpeg = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
       output, errors = ffmpeg.communicate()
       if ffmpeg.returncode == 0:	  
         print("Stacking movie: %s finished successfully!"% moviepath)
-        logging.info(output + '\n')
-        logging.info("Stacking movie: %s finished successfully!"% moviepath)
+        Logger.info(output + '\n')
+        Logger.info("Stacking movie: %s finished successfully!"% moviepath)
         time.sleep(2)
-        logging.info("Cleaning Up movie: %s by removing part files and temporary input file: %s!"% (moviepath, moviename))
+        Logger.info("Cleaning Up movie: %s by removing part files and temporary input file: %s!"% (moviepath, movietxt))
         for moviepart in movies[moviepath]:
-          if sys.platform == "win32":
-            remove_command = ["del", moviepart]
-          else:
-            remove_command = ["rm", moviepart]
-          try:
-            logging.info("Remove command: %s"% remove_command)
-            response = subprocess.check_call(remove_command, stderr=subprocess.STDOUT).decode("utf-8")
-            if response == 0:
-              logging.info("Permanently removed part file %s from movie: %s!"% (moviepart, moviepath))
-          except Exception as e:
-            logging.error("[ERROR]There was a problem removing part file: %s!"% moviepart)
-            raise
-        if sys.platform == "win32":
-            remove_command = ["del", moviename]
-        else:
-            remove_command = ["rm", moviename]
-        try:
-          logging.info("Removing %s temporary file"%moviename)
-          response = subprocess.check_call(remove_command, stderr=subprocess.STDOUT).decode("utf-8")
-          if response == 0:
-            logging.info("Permanently removed temporary file %s from movie: %s!"% (moviename, moviepath))	
-        except Exception as e:
-          logging.error("[ERROR]There was a problem removing temporary file: %s!"% moviename)
-          raise			
-        logging.info("Finished cleaning up movie: %s successfully!"% moviepath)		  
+          remove_file(moviepart)  
+        remove_file(movietxt)
+        Logger.info("Finished cleaning up movie: %s successfully!"% moviepath)		  
     except OSError:
-        logging.debug('OS Error')
+        Logger.debug('OS Error')
         raise
     except subprocess.CalledProcessError as e:
       print("[FFMPEG ERROR] Stacking movie: %s was unsuccessfully!"% moviepath)
-      logging.debug("[FFMPEG ERROR] Stacking movie: %s was unsuccessfully!"% moviepath + str(e))
+      Logger.debug("[FFMPEG ERROR] Stacking movie: %s was unsuccessfully!"% moviepath + str(e))
       raise
   
   endTime = time.time()
@@ -101,9 +112,9 @@ def process(movies):
   print("#############################################")
   print("## [%i] Movie(s) were stacked successfully! ##"% movie_count)
   print("#############################################")
-  logging.info("##################################################################")
-  logging.info("## [%i] Movie(s) were stacked successfully. Runtime: %s seconds ##"% (movie_count, proc_time))
-  logging.info("##################################################################")
+  Logger.info("##################################################################")
+  Logger.info("## [%i] Movie(s) were stacked successfully. Runtime: %s seconds ##"% (movie_count, proc_time))
+  Logger.info("##################################################################")
   
 def main(argv):
 
