@@ -59,15 +59,45 @@ def process(movies):
       if ffmpeg.returncode == 0:	  
         print("Stacking movie: %s finished successfully!"% moviepath)
         logging.info(output + '\n')
-        logging.info("Stacking movie: %s finished successfully!\n"% moviepath)
+        logging.info("Stacking movie: %s finished successfully!"% moviepath)
+        time.sleep(2)
+        logging.info("Cleaning Up movie: %s by removing part files and temporary input file: %s!"% (moviepath, moviename))
+        for moviepart in movies[moviepath]:
+          if sys.platform == "win32":
+            remove_command = ["del", moviepart]
+          else:
+            remove_command = ["rm", moviepart]
+          try:
+            logging.info("Remove command: %s"% remove_command)
+            response = subprocess.check_call(remove_command, stderr=subprocess.STDOUT).decode("utf-8")
+            if response == 0:
+              logging.info("Permanently removed part file %s from movie: %s!"% (moviepart, moviepath))
+          except Exception as e:
+            logging.error("[ERROR]There was a problem removing part file: %s!"% moviepart)
+            raise
+        if sys.platform == "win32":
+            remove_command = ["del", moviename]
+        else:
+            remove_command = ["rm", moviename]
+        try:
+          logging.info("Removing %s temporary file"%moviename)
+          response = subprocess.check_call(remove_command, stderr=subprocess.STDOUT).decode("utf-8")
+          if response == 0:
+            logging.info("Permanently removed temporary file %s from movie: %s!"% (moviename, moviepath))	
+        except Exception as e:
+          logging.error("[ERROR]There was a problem removing temporary file: %s!"% moviename)
+          raise			
+        logging.info("Finished cleaning up movie: %s successfully!"% moviepath)		  
     except OSError:
         logging.debug('OS Error')
+        raise
     except subprocess.CalledProcessError as e:
-      print("[FFMPEG ERROR] Stacking movie: %s was unsuccessfully! \n"% moviepath)
+      print("[FFMPEG ERROR] Stacking movie: %s was unsuccessfully!"% moviepath)
       logging.debug("[FFMPEG ERROR] Stacking movie: %s was unsuccessfully!"% moviepath + str(e))
-
+      raise
+  
   endTime = time.time()
-  proc_time = str((round(endTime - startTime) / 60))
+  proc_time = str((round(endTime - startTime)))
   print("#############################################")
   print("## [%i] Movie(s) were stacked successfully! ##"% movie_count)
   print("#############################################")
