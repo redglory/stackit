@@ -66,7 +66,7 @@ def process(movies):
     movietxt = moviepath + '.txt'
     f = open(movietxt, 'w') 
     for moviepart in movies[moviepath]:
-      f.write('file ' + '"' + moviepart + '"' + '\n')
+      f.write('file ' + "'" + moviepart + "'" + '\n')
     f.flush()	  
     f.close()
     
