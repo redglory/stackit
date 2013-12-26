@@ -3,7 +3,6 @@ import os, sys
 import subprocess
 import time
 import logging
-import shlex
 import errno
 
 global movie_count
