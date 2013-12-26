@@ -4,8 +4,7 @@ import subprocess
 import time
 import logging
 import errno
-
-global movie_count
+import re
 
 def mkdir_p(path):
   try:
@@ -65,7 +64,8 @@ def process(movies):
     movietxt = moviepath + '.txt'
     f = open(movietxt, 'w') 
     for moviepart in movies[moviepath]:
-      f.write('file ' + "'" + moviepart + "'" + '\n')
+      moviefile = moviepart.replace("'", r"'\''")
+      f.write('file ' + "'" + moviefile + "'" + '\n')
     f.flush()	  
     f.close()
     
