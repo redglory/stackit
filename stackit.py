@@ -96,12 +96,12 @@ def process(movies):
         Logger.error("Stacking movie: %s was unsuccessfully!"% moviepath)
     except OSError:
         Logger.debug('OS Error')
-        raise
+        pass
         movie_error_count += 1
     except subprocess.CalledProcessError as e:
       print("[FFMPEG ERROR] Stacking movie: %s was unsuccessfully!"% moviepath)
       Logger.debug("[FFMPEG ERROR] Stacking movie: %s was unsuccessfully!"% moviepath + str(e))
-      raise
+      pass
       movie_error_count += 1
 		
   endTime = time.time()
