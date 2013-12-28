@@ -4,9 +4,10 @@ import subprocess
 import time
 import logging
 import errno
-import re
+import collections
 
 def mkdir_p(path):
+
   try:
     os.makedirs(path)
   except OSError as e:
@@ -16,13 +17,14 @@ def mkdir_p(path):
       raise 
 
 def create_log(logfile):
-    mkdir_p(os.path.join(os.getcwd(), "logs"))
-    logging.basicConfig(filename=logfile,
-                        filemode='w',
-                        format='%(asctime)s,%(msecs)d :: [%(name)s] :: [%(levelname)s] %(message)s',
-                        datefmt='%H:%M:%S',
-                        level=logging.DEBUG)
-    return logging.getLogger(__name__)
+
+  mkdir_p(os.path.join(os.getcwd(), "logs"))
+  logging.basicConfig(filename=logfile,
+                      filemode='w',
+                      format='%(asctime)s,%(msecs)d :: [%(name)s] :: [%(levelname)s] %(message)s',
+                      datefmt='%H:%M:%S',
+                      level=logging.DEBUG)
+  return logging.getLogger(__name__)
 	
 def getMovieFiles(argv):
 
@@ -32,7 +34,12 @@ def getMovieFiles(argv):
 
   for x in range(1,10):
     exts.append(".CD{0}.avi".format(x))
-
+    exts.append(".CD{0}.mkv".format(x))
+    exts.append(".CD{0}.mp4".format(x))
+	
+  print("Please wait, searching for unstacked movies on library: %s..."% os.path.normpath(argv[0]).upper())
+  Logger.info("Searching for unstacked movies on library: %s..."% os.path.normpath(argv[0]).upper())	
+  
   for root, dirs, files in os.walk(argv[0]):			
     for dir in dirs:    
       for ext in exts:
@@ -43,16 +50,17 @@ def getMovieFiles(argv):
             filelist[os.path.join(root, dir)] = dirfiles
       dirfiles=[]
 
-  movielist = sorted(filelist.items(), key = lambda t: t[0])
-  return dict(movielist)
+  #movielist = sorted(filelist.items(), key = lambda t: t[0])
+  return collections.OrderedDict(sorted(filelist.items(), key = lambda t: t[0]))
  
 def remove_file(filepath):
+
    try:
      os.remove(os.path.realpath(filepath))
      Logger.info("Permanently removed file %s!"% filepath)
    except Exception as e:
      Logger.error("There was a problem removing file: %s!"% filepath)
-     raise
+     pass
 
 def process(movies):
 
@@ -82,40 +90,44 @@ def process(movies):
       output, errors = ffmpeg.communicate()
       if ffmpeg.returncode == 0:	  
         print("Stacking movie: %s finished successfully!"% moviepath)
-        Logger.info(output + '\n')
+        #Logger.info(output + '\n')
         Logger.info("Stacking movie: %s finished successfully!"% moviepath)
         time.sleep(2)
         Logger.info("Cleaning Up movie: %s by removing part files and temporary input file: %s!"% (moviepath, movietxt))
         for moviepart in movies[moviepath]:
-          remove_file(moviepart)  
+          remove_file(moviepart)
+          time.sleep(0.5)		  
         remove_file(movietxt)
         Logger.info("Finished cleaning up movie: %s successfully!"% moviepath)
         movie_count += 1		
       else:
-        Logger.error(output + '\n')
+        Logger.debug(output + '\n')
         Logger.error("Stacking movie: %s was unsuccessfully!"% moviepath)
-    except OSError:
-        Logger.debug('OS Error')
-        pass
         movie_error_count += 1
-    except subprocess.CalledProcessError as e:
-      print("[FFMPEG ERROR] Stacking movie: %s was unsuccessfully!"% moviepath)
-      Logger.debug("[FFMPEG ERROR] Stacking movie: %s was unsuccessfully!"% moviepath + str(e))
-      pass
+        pass
+    except OSError:
+      Logger.debug('OS Error: ' + str(errno) + '] :: [' + strerror + ']' + '\n')
       movie_error_count += 1
+      pass
+    except subprocess.CalledProcessError as e:
+      Logger.debug("Stacking movie: %s was unsuccessfully!"% moviepath + str(e))
+      movie_error_count += 1      
+      pass
 		
   endTime = time.time()
   proc_time = str((round(endTime - startTime)))
-  print("###############################################")
-  print("## [%i] Movie(s) were stacked successfully!   ##"% movie_count)
-  print("###############################################")
-  print("## [%i] Movie(s) generated processing errors! ##"% movie_error_count)
-  print("###############################################")
-  Logger.info("##################################################################")
-  Logger.info("## [%i] Movie(s) were stacked successfully. Runtime: %s seconds  ##"% (movie_count, proc_time))
-  Logger.info("##################################################################")
-  Logger.info("## [%i] Movie(s) generated processing errors!                    ##"% movie_error_count)
-  Logger.info("##################################################################")
+  print("#############################################")
+  print(" [%i] Movie(s) were stacked successfully!   "% movie_count)
+  print("#############################################")
+  print(" [%i] Movie(s) generated processing errors! "% movie_error_count)
+  print("#############################################")
+  Logger.info("##############################################")
+  Logger.info("				Runtime: %s seconds				     "% proc_time)
+  Logger.info("##############################################")
+  Logger.info(" [%i] Movie(s) were stacked successfully.						"% movie_count)
+  Logger.info("##############################################")
+  Logger.info(" [%i] Movie(s) generated processing errors!					    "% movie_error_count)
+  Logger.info("##############################################")
   
 def main(argv):
 
